@@ -1,0 +1,96 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.7.
+--
+-- see: https://github.com/sol/hpack
+
+name:           websockets-prototype
+version:        0.1.0.0
+synopsis:       Short, one-line summary of project here.
+description:    Longer description of package here.
+                .
+                Maybe include a simple usage example.
+category:       Web
+homepage:       https://github.com/prikhi/websockets-prototype#readme
+bug-reports:    https://github.com/prikhi/websockets-prototype/issues
+author:         Pavan Rikhi
+maintainer:     pavan.rikhi@gmail.com
+copyright:      2020, Pavan Rikhi
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/prikhi/websockets-prototype
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_websockets_prototype
+  hs-source-dirs:
+      src
+  default-extensions:
+      DeriveGeneric
+      LambdaCase
+      NamedFieldPuns
+      OverloadedStrings
+      TupleSections
+      TypeApplications
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable websockets-prototype
+  main-is: Main.hs
+  other-modules:
+      Paths_websockets_prototype
+  hs-source-dirs:
+      app
+  default-extensions:
+      DeriveGeneric
+      LambdaCase
+      NamedFieldPuns
+      OverloadedStrings
+      TupleSections
+      TypeApplications
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts "-N -T"
+  build-depends:
+      base >=4.7 && <5
+    , websockets-prototype
+  default-language: Haskell2010
+
+test-suite websockets-prototype-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_websockets_prototype
+  hs-source-dirs:
+      tests
+  default-extensions:
+      DeriveGeneric
+      LambdaCase
+      NamedFieldPuns
+      OverloadedStrings
+      TupleSections
+      TypeApplications
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts "-N -T"
+  build-depends:
+      base >=4.7 && <5
+    , hedgehog
+    , tasty
+    , tasty-hedgehog
+    , tasty-hunit
+    , websockets-prototype
+  default-language: Haskell2010
