@@ -5,9 +5,9 @@ name:
 version:
     0.1.0.0
 github:
-    prikhi/websockets-prototype
+    costarastrology/websockets-prototype
 homepage:
-    https://github.com/prikhi/websockets-prototype#readme
+    https://github.com/costarastrology/websockets-prototype#readme
 license:
     BSD3
 license-file:
@@ -17,7 +17,7 @@ author:
 maintainer:
     pavan.rikhi@gmail.com
 copyright:
-    2020, Pavan Rikhi
+    2022-present, Co-Star Astrology Society
 category:
     Web
 extra-source-files:

@@ -11,11 +11,11 @@ description:    Longer description of package here.
                 .
                 Maybe include a simple usage example.
 category:       Web
-homepage:       https://github.com/prikhi/websockets-prototype#readme
-bug-reports:    https://github.com/prikhi/websockets-prototype/issues
+homepage:       https://github.com/costarastrology/websockets-prototype#readme
+bug-reports:    https://github.com/costarastrology/websockets-prototype/issues
 author:         Pavan Rikhi
 maintainer:     pavan.rikhi@gmail.com
-copyright:      2020, Pavan Rikhi
+copyright:      2022-present, Co-Star Astrology Society
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -25,7 +25,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/prikhi/websockets-prototype
+  location: https://github.com/costarastrology/websockets-prototype
 
 library
   exposed-modules:
