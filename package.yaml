@@ -61,7 +61,13 @@ library:
     source-dirs:
         src
     dependencies:
-        []
+        - aeson
+        - bytestring
+        - hedis
+        - http-types
+        - lifted-async
+        - time
+        - wai
 
 executables:
     websockets-prototype:
@@ -75,6 +81,7 @@ executables:
             - -with-rtsopts "-N -T"
         dependencies:
             - websockets-prototype
+            - warp
 
 tests:
     websockets-prototype-test:
