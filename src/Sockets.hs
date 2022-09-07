@@ -24,11 +24,14 @@ import           Network.Wai                    ( Application
                                                 , responseLBS
                                                 )
 import           Network.Wai.Handler.WebSockets ( websocketsOr )
-import           Network.WebSockets             ( Connection
+import           Network.WebSockets             ( CompressionOptions(..)
+                                                , Connection
                                                 , ConnectionException
+                                                , ConnectionOptions(..)
                                                 , PendingConnection
                                                 , acceptRequest
                                                 , defaultConnectionOptions
+                                                , defaultPermessageDeflate
                                                 , receiveData
                                                 , sendTextData
                                                 , withPingThread
@@ -48,10 +51,17 @@ websocketsHandlerWithFallback
     -> (Response -> IO ResponseReceived)
     -> IO ResponseReceived
 websocketsHandlerWithFallback connMap = websocketsOr
-    defaultConnectionOptions
+    connectionOptions
     (websocketsHandler connMap)
     fallbackRoute
   where
+    -- Enable compression of websocket messages.
+    connectionOptions :: ConnectionOptions
+    connectionOptions = defaultConnectionOptions
+        { connectionCompressionOptions = PermessageDeflateCompression
+                                             defaultPermessageDeflate
+        }
+    -- Return a 400 if we get hit with a non-websockets request.
     fallbackRoute :: Application
     fallbackRoute _ respond =
         respond $ responseLBS status400 [] "Expected a WebSockets request."
