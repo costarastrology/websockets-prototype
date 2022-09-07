@@ -81,6 +81,7 @@ executables:
             - -with-rtsopts "-N -T"
         dependencies:
             - websockets-prototype
+            - wai-extra
             - warp
 
 tests:

@@ -74,6 +74,7 @@ executable websockets-prototype
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts "-N -T"
   build-depends:
       base >=4.7 && <5
+    , wai-extra
     , warp
     , websockets-prototype
   default-language: Haskell2010
