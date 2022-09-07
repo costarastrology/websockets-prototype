@@ -50,6 +50,7 @@ import qualified Data.ByteString.Lazy          as LBS
 data ISCBPing1Message = SendPing1
     deriving (Show, Read, Eq, Ord, Generic, ToJSON, FromJSON)
 
+-- | A dumb handler for 'ISCBPing1Message's.
 ping1Handler :: RedisChannel -> ISCBPing1Message -> IO ()
 ping1Handler channel = \case
     SendPing1 -> do
@@ -61,6 +62,7 @@ ping1Handler channel = \case
 data ISCBPing2Message = SendPing2
     deriving (Show, Read, Eq, Ord, Generic, ToJSON, FromJSON)
 
+-- | A dumb handler for 'ISCBPing2Message's.
 ping2Handler :: RedisChannel -> ISCBPing2Message -> IO ()
 ping2Handler channel = \case
     SendPing2 -> do
@@ -170,6 +172,7 @@ makeMessageHandler handler =
 
 -- MISC
 
+-- | Render the current time in a nice format for logging.
 getFormattedTime :: IO String
 getFormattedTime =
     formatTime defaultTimeLocale "[%H:%M:%S] " <$> getCurrentTime
