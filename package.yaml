@@ -63,11 +63,15 @@ library:
     dependencies:
         - aeson
         - bytestring
+        - containers
         - hedis
         - http-types
         - lifted-async
+        - stm
         - time
         - wai
+        - wai-websockets
+        - websockets
 
 executables:
     websockets-prototype:
