@@ -6,7 +6,34 @@
 A simple experiment / prototype exploring how to scale webscokets across
 multiple servers, using Redis for inter-server communication.
 
-Requires [`stack`][get-stack]:
+
+## Build
+
+You can build the project with [stack][stack]:
+
+```sh
+stack build
+```
+
+For development, you can enable fast builds with file-watching,
+documentation-building, & test-running:
+
+```sh
+stack test --haddock --fast --file-watch --pedantic
+```
+
+To build & open the documentation, run:
+
+```sh
+stack haddock --open websockets-prototype
+```
+
+[stack]: https://docs.haskellstack.org/en/stable/README/
+
+
+## Usage
+
+### Interserver Communication
 
 ```sh
 # Start a server on port 9000
@@ -29,41 +56,52 @@ curl localhost:9001/ping1
 curl localhost:9001/ping2
 ```
 
-[get-stack]: https://docs.haskellstack.org/en/stable/README/
+### Websockets
 
-
-## Install
-
-You can install the CLI exe by running `stack install`. This lets you call the
-executable directly instead of through stack:
+You'll need a WebSockets client. [Postman][postman] has one built in & is what
+we use.
 
 ```sh
-stack install
-export PATH="${HOME}/.local/bin/:${PATH}"
-websockets-prototype
+# Start a server on port 9000
+$ PORT=9000 stack run
+# Start another server on port 9001
+$ PORT=9001 stack run
 ```
 
+Open a websocket connection to each server in 2 clients via the `/websockets`
+route(`ws://localhost:9000/websockets` & `ws://localhost:9001/websockets`). You
+should see each server print out the new connection & the list of connected
+clients.
 
-## Build
+In a client, send this message:
 
-You can build the project with stack:
-
-```sh
-stack build
+```json
+{
+    "channel": "chat",
+    "message": {
+        "type": "SubmitMessage",
+        "contents": "Hello World"
+    }
+}
 ```
 
-For development, you can enable fast builds with file-watching,
-documentation-building, & test-running:
+The receiving server should print out the parsed message & all clients should
+receive this reply back, no matter what server they are connected to:
 
-```sh
-stack test --haddock --fast --file-watch --pedantic
+```json
+{
+    "channel": "chat",
+    "message": {
+        "contents": {
+            "content": "Hello World",
+            "postedAt": "2022-09-09T18:12:45.90481586Z"
+        },
+        "type": "NewMessageReceived"
+    }
+}
 ```
 
-To build & open the documentation, run:
-
-```sh
-stack haddock --open websockets-prototype
-```
+[postman]: https://learning.postman.com/docs/sending-requests/websocket/websocket/
 
 
 ## LICENSE
