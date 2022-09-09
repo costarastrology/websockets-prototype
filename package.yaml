@@ -47,6 +47,7 @@ default-extensions:
     - LambdaCase
     - NamedFieldPuns
     - OverloadedStrings
+    - ScopedTypeVariables
     - TupleSections
     - TypeApplications
     - TypeOperators
@@ -68,6 +69,7 @@ library:
         - http-types
         - lifted-async
         - stm
+        - text
         - time
         - wai
         - wai-websockets

@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-| Inter-Server Communication Bus.
 
 Use redis pub/sub to send messages between multiple API servers.
@@ -81,6 +80,10 @@ messageHandlers = [mkPing1Handler ping1Handler, mkPing2Handler ping2Handler]
 data ISCBChannel
     = Ping1Channel
     | Ping2Channel
+    | ChatWSRelay
+    -- ^ TODO: It seems bad we have to define this here?
+    -- Should we have 'MessageToChannel' be something like:
+    -- @toChannel :: a -> ByteString@ or @toChannel :: ByteString@?
     deriving (Show, Read, Eq, Ord)
 
 -- | Encoding of channel. Could just derive a ToJSON instead...
@@ -88,6 +91,7 @@ channelName :: ISCBChannel -> BS.ByteString
 channelName = \case
     Ping1Channel -> "ping1"
     Ping2Channel -> "ping2"
+    ChatWSRelay  -> "websockets-chat-relay"
 
 -- | Defines a mapping from a discrete message type to it's target PubSub
 -- channel.
@@ -115,10 +119,13 @@ publishMessage cmsg =
 -- | Connect to Redis & then fork a forever-running, parallel thread to
 -- subscribe to the desired redis channels which is run alongside the
 -- passed action.
-withRedisSubs :: (Connection -> IO ()) -> IO ()
-withRedisSubs nextTo = do
+withRedisSubs
+    :: [(RedisChannel, MessageCallback)] -> (Connection -> IO ()) -> IO ()
+withRedisSubs extraHandlers nextTo = do
     conn             <- connect defaultConnectInfo
-    pubSubController <- newPubSubController messageHandlers []
+    pubSubController <- newPubSubController
+        (extraHandlers <> messageHandlers)
+        []
     void $ concurrently
         (       forever
         $       pubSubForever conn
