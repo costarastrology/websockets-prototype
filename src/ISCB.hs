@@ -9,7 +9,7 @@ module ISCB where
 import           Control.Concurrent             ( threadDelay )
 import           Control.Concurrent.Async.Lifted.Safe
                                                 ( concurrently )
-import           Control.Exception              ( Exception(displayException)
+import           Control.Exception.Safe         ( Exception(displayException)
                                                 , SomeException
                                                 , catch
                                                 )

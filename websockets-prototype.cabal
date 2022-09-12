@@ -58,6 +58,7 @@ library
     , hedis
     , http-types
     , lifted-async
+    , safe-exceptions
     , stm
     , text
     , time
