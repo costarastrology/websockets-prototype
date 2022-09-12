@@ -15,10 +15,8 @@ import           Network.Wai                    ( Application
                                                 )
 
 import           Chat                           ( chatClientMessageHandler )
-import           ISCB                           ( ISCBPing1Message(..)
-                                                , ISCBPing2Message(..)
-                                                , publishMessage
-                                                )
+import           ISCB                           ( publishMessage )
+import           Ping                           ( PingInterServerMessage(..) )
 import           Sockets                        ( websocketsHandlerWithFallback
                                                 )
 import           Sockets.Messages               ( ConnectionMap

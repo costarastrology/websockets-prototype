@@ -50,6 +50,7 @@ default-extensions:
     - ScopedTypeVariables
     - TupleSections
     - TypeApplications
+    - TypeFamilies
     - TypeOperators
     - ViewPatterns
 

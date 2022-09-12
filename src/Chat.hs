@@ -8,10 +8,7 @@ module Chat where
 import           Control.Concurrent.STM         ( TVar )
 import           Control.Monad                  ( void )
 import           Data.Aeson                     ( FromJSON(..)
-                                                , Options(..)
-                                                , SumEncoding(..)
                                                 , ToJSON(..)
-                                                , defaultOptions
                                                 , genericParseJSON
                                                 , genericToJSON
                                                 )
@@ -20,8 +17,7 @@ import           Data.Time                      ( UTCTime
                                                 )
 import           GHC.Generics                   ( Generic )
 
-import           ISCB                           ( ISCBChannel(..)
-                                                , MessageToChannel(..)
+import           ISCB                           ( MessageToChannel(..)
                                                 , makeMessageHandler
                                                 , publishMessage
                                                 )
@@ -31,6 +27,9 @@ import           Sockets.Messages               ( ConnectionMap
                                                 , SendableWSMessage
                                                 , UserId
                                                 , broadcastMessage
+                                                )
+import           Utils                          ( msgDataJsonOptions
+                                                , msgJsonOptions
                                                 )
 
 import qualified Data.Text                     as T
@@ -48,7 +47,7 @@ data ChatWSMsgForServer = SubmitMessage T.Text
 instance ReceivableWSMessage ChatWSMsgForServer
 
 instance FromJSON ChatWSMsgForServer where
-    parseJSON = genericParseJSON jsonOptions
+    parseJSON = genericParseJSON msgJsonOptions
 
 
 -- | WebSocket messages we can _send_ to clients.
@@ -58,11 +57,11 @@ data ChatWSMsgForClient = NewMessageReceived NewMessageData
 instance SendableWSMessage ChatWSMsgForClient
 
 instance ToJSON ChatWSMsgForClient where
-    toJSON = genericToJSON jsonOptions
+    toJSON = genericToJSON msgJsonOptions
 
 -- | This instance is needed for server<->server forwarding.
 instance FromJSON ChatWSMsgForClient where
-    parseJSON = genericParseJSON jsonOptions
+    parseJSON = genericParseJSON msgJsonOptions
 
 -- | Data forthe 'NewMessageReceived' value.
 data NewMessageData = NewMessageData
@@ -72,9 +71,9 @@ data NewMessageData = NewMessageData
     deriving (Show, Read, Eq, Ord, Generic)
 
 instance ToJSON NewMessageData where
-    toJSON = genericToJSON dataJsonOptions
+    toJSON = genericToJSON msgDataJsonOptions
 instance FromJSON NewMessageData where
-    parseJSON = genericParseJSON dataJsonOptions
+    parseJSON = genericParseJSON msgDataJsonOptions
 
 
 instance HasWSChannelName ChatWSMsgForServer where
@@ -94,13 +93,17 @@ data ChatInterServerMessage = BroadcastChatMessage ChatWSMsgForClient
     deriving (Show, Read, Eq, Ord, Generic)
 
 instance ToJSON ChatInterServerMessage where
-    toJSON = genericToJSON jsonOptions
+    toJSON = genericToJSON msgJsonOptions
 
 instance FromJSON ChatInterServerMessage where
-    parseJSON = genericParseJSON jsonOptions
+    parseJSON = genericParseJSON msgJsonOptions
+
+data ChatRedisChannel = ChatRedisChannel
 
 instance MessageToChannel ChatInterServerMessage where
-    toChannel = ChatWSRelay
+    type MsgChannel ChatInterServerMessage = ChatRedisChannel
+    toChannel _ = ChatRedisChannel
+    encodeChannel _ = "websockets-chat-relay"
 
 
 -- HANDLERS
@@ -108,8 +111,9 @@ instance MessageToChannel ChatInterServerMessage where
 -- | Handler for incoming redis messages.
 chatInterServerMessageHandler
     :: TVar ConnectionMap -> (R.RedisChannel, R.MessageCallback)
-chatInterServerMessageHandler connMap = makeMessageHandler $ \_ -> \case
-    BroadcastChatMessage subMsg -> broadcastMessage connMap subMsg
+chatInterServerMessageHandler connMap =
+    makeMessageHandler ChatRedisChannel $ \_ -> \case
+        BroadcastChatMessage subMsg -> broadcastMessage connMap subMsg
 
 -- | Handler for incoming websocket messages.
 chatClientMessageHandler
@@ -123,22 +127,3 @@ chatClientMessageHandler redisConn _ = \case
             . BroadcastChatMessage
             . NewMessageReceived
             $ NewMessageData receiveTime msgText
-
-
-
--- | Some reasonable JSON encoding/decoding options for our top-level
--- websocket & redis message types.
-jsonOptions :: Options
-jsonOptions = defaultOptions
-    { allNullaryToStringTag = False
-    , unwrapUnaryRecords    = False
-    , tagSingleConstructors = True
-    , sumEncoding           = TaggedObject { tagFieldName      = "type"
-                                           , contentsFieldName = "contents"
-                                           }
-    }
-
--- | JSON encoding/decoding options for the XyzData types nested in
--- a top-level message type.
-dataJsonOptions :: Options
-dataJsonOptions = jsonOptions { tagSingleConstructors = False }

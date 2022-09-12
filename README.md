@@ -101,6 +101,24 @@ receive this reply back, no matter what server they are connected to:
 }
 ```
 
+Hit either of the ping API routes with curl:
+
+```sh
+curl http://localhost:9001/ping2
+```
+
+You should see every websockets client receive this message:
+
+```json
+{
+    "channel": "ping",
+    "message": {
+        "contents": 2,
+        "type": "Ping"
+    }
+}
+```
+
 [postman]: https://learning.postman.com/docs/sending-requests/websocket/websocket/
 
 

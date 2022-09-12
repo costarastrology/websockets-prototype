@@ -32,9 +32,11 @@ library
       Chat
       HttpServer
       ISCB
+      Ping
       Sockets
       Sockets.Connections
       Sockets.Messages
+      Utils
   other-modules:
       Paths_websockets_prototype
   hs-source-dirs:
@@ -47,6 +49,7 @@ library
       ScopedTypeVariables
       TupleSections
       TypeApplications
+      TypeFamilies
       TypeOperators
       ViewPatterns
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2
@@ -81,6 +84,7 @@ executable websockets-prototype
       ScopedTypeVariables
       TupleSections
       TypeApplications
+      TypeFamilies
       TypeOperators
       ViewPatterns
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts "-N -T"
@@ -106,6 +110,7 @@ test-suite websockets-prototype-test
       ScopedTypeVariables
       TupleSections
       TypeApplications
+      TypeFamilies
       TypeOperators
       ViewPatterns
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts "-N -T"

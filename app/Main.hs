@@ -8,10 +8,15 @@ import           Chat                           ( chatInterServerMessageHandler
                                                 )
 import           HttpServer                     ( app )
 import           ISCB                           ( withRedisSubs )
+import           Ping                           ( pingInterServerMessageHandlers
+                                                )
 import           Sockets.Connections            ( initializeConnectionMap )
 
 main :: IO ()
 main = do
     wsConnMap <- initializeConnectionMap
-    withRedisSubs [chatInterServerMessageHandler wsConnMap]
-                  (runEnv 9001 . logStdoutDev . app wsConnMap)
+    withRedisSubs
+        ( chatInterServerMessageHandler wsConnMap
+        : pingInterServerMessageHandlers wsConnMap
+        )
+        (runEnv 9001 . logStdoutDev . app wsConnMap)
