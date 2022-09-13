@@ -10,13 +10,14 @@ import           HttpServer                     ( app )
 import           ISCB                           ( withRedisSubs )
 import           Ping                           ( pingInterServerMessageHandlers
                                                 )
-import           Sockets.Connections            ( initializeConnectionMap )
+import           Sockets.Controller             ( initializeWebsocketsController
+                                                )
 
 main :: IO ()
 main = do
-    wsConnMap <- initializeConnectionMap
+    wsController <- initializeWebsocketsController
     withRedisSubs
-        ( chatInterServerMessageHandler wsConnMap
-        : pingInterServerMessageHandlers wsConnMap
+        ( chatInterServerMessageHandler wsController
+        : pingInterServerMessageHandlers wsController
         )
-        (runEnv 9001 . logStdoutDev . app wsConnMap)
+        (runEnv 9001 . logStdoutDev . app wsController)

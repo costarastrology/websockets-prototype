@@ -13,7 +13,7 @@ subscribe/unsubscribe messages that list them as listeners of a given channel.
 
 -}
 module Sockets.Messages
-    ( ConnectionMap
+    ( WebsocketController
     , UserId
     , HasWSChannelName(..)
     -- * Sending
@@ -39,8 +39,8 @@ import           Data.Aeson                     ( (.:)
                                                 , withObject
                                                 )
 
-import           Sockets.Connections            ( ConnectionMap
-                                                , UserId
+import           Sockets.Controller             ( UserId
+                                                , WebsocketController
                                                 , broadcastRawMessage
                                                 , sendRawMessageToClient
                                                 )
@@ -92,11 +92,11 @@ class (HasWSChannelName msg, ToJSON msg) => SendableWSMessage msg
 
 -- | Send a message to the client with the given ID.
 sendMessage
-    :: SendableWSMessage msg => TVar ConnectionMap -> UserId -> msg -> IO ()
+    :: SendableWSMessage msg => TVar WebsocketController -> UserId -> msg -> IO ()
 sendMessage cm u = sendRawMessageToClient cm u . encode . toWebsocketsMessage
 
 -- | Send a message to all connected clients.
-broadcastMessage :: SendableWSMessage msg => TVar ConnectionMap -> msg -> IO ()
+broadcastMessage :: SendableWSMessage msg => TVar WebsocketController -> msg -> IO ()
 broadcastMessage cm msg =
     broadcastRawMessage cm . encode $ toWebsocketsMessage msg
 
@@ -161,6 +161,10 @@ handleIncomingWebsocketMessages uid allHandlers rawMsg =
                     filter ((== channelName) . whChannel) allHandlers
             mapM_ (($ rawMsg) . ($ uid) . whHandler) matchingChannels
 
+-- | A throwaway type we use to decode just the channel from a message.
+-- With the channel name, we can pass the raw message to the appropriate
+-- handler, which will take care of decoding the raw message into it's
+-- respective message type.
 newtype JustChannel = JustChannel { jcChannel :: T.Text } deriving (Show, Read, Eq, Ord)
 
 instance FromJSON JustChannel where

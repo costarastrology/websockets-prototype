@@ -28,8 +28,8 @@ import           Network.WebSockets             ( CompressionOptions(..)
                                                 , withPingThread
                                                 )
 
-import           Sockets.Connections            ( ConnectionMap
-                                                , UserId
+import           Sockets.Controller             ( UserId
+                                                , WebsocketController
                                                 , getConnectedClients
                                                 , registerNewClient
                                                 , unregisterClient
@@ -42,14 +42,14 @@ import           Sockets.Messages               ( WebsocketHandler
 -- | A request handler that calls the websockets handler or throws a 400
 -- error if the request is not a websockets request..
 websocketsHandlerWithFallback
-    :: TVar ConnectionMap
+    :: TVar WebsocketController
     -> [WebsocketHandler]
     -> Request
     -> (Response -> IO ResponseReceived)
     -> IO ResponseReceived
-websocketsHandlerWithFallback connMap messageHandlers = websocketsOr
+websocketsHandlerWithFallback wsController messageHandlers = websocketsOr
     connectionOptions
-    (websocketsHandler connMap messageHandlers)
+    (websocketsHandler wsController messageHandlers)
     fallbackRoute
   where
     -- Enable compression of websocket messages.
@@ -78,10 +78,13 @@ websocketsHandlerWithFallback connMap messageHandlers = websocketsOr
 --      * An exception handler that removes the client from the connection
 --        map.
 websocketsHandler
-    :: TVar ConnectionMap -> [WebsocketHandler] -> PendingConnection -> IO ()
-websocketsHandler connMap messageHandlers pendingConn = do
+    :: TVar WebsocketController
+    -> [WebsocketHandler]
+    -> PendingConnection
+    -> IO ()
+websocketsHandler wsController messageHandlers pendingConn = do
     connection <- acceptRequest pendingConn
-    clientId   <- registerNewClient connMap connection
+    clientId   <- registerNewClient wsController connection
     logConnected clientId
     withPingThread connection 30 (return ())
         $ withCleanup clientId
@@ -91,13 +94,13 @@ websocketsHandler connMap messageHandlers pendingConn = do
     logConnected :: UserId -> IO ()
     logConnected clientId = do
         putStrLn $ "[WebSocket] [" <> show clientId <> "] Connected"
-        connectedIds <- atomically $ getConnectedClients connMap
+        connectedIds <- atomically $ getConnectedClients wsController
         putStrLn $ "[WebSocket] New Client List: " <> show connectedIds
     withCleanup :: UserId -> IO () -> IO ()
     withCleanup clientId = handle $ \(_ :: ConnectionException) -> do
         connectedIds <- atomically $ do
-            unregisterClient connMap clientId
-            getConnectedClients connMap
+            unregisterClient wsController clientId
+            getConnectedClients wsController
         putStrLn $ "[WebSocket] [" <> show clientId <> "] Disconnected"
         putStrLn $ "[WebSocket] New Client List: " <> show connectedIds
     handleMessages :: UserId -> Connection -> IO ()

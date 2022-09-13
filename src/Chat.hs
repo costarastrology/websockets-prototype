@@ -21,11 +21,11 @@ import           ISCB                           ( MessageToChannel(..)
                                                 , makeMessageHandler
                                                 , publishMessage
                                                 )
-import           Sockets.Messages               ( ConnectionMap
-                                                , HasWSChannelName(..)
+import           Sockets.Messages               ( HasWSChannelName(..)
                                                 , ReceivableWSMessage
                                                 , SendableWSMessage
                                                 , UserId
+                                                , WebsocketController
                                                 , broadcastMessage
                                                 )
 import           Utils                          ( msgDataJsonOptions
@@ -98,6 +98,7 @@ instance ToJSON ChatInterServerMessage where
 instance FromJSON ChatInterServerMessage where
     parseJSON = genericParseJSON msgJsonOptions
 
+-- | Interserver chat communication occurs through a single Redis channel.
 data ChatRedisChannel = ChatRedisChannel
 
 instance MessageToChannel ChatInterServerMessage where
@@ -110,10 +111,10 @@ instance MessageToChannel ChatInterServerMessage where
 
 -- | Handler for incoming redis messages.
 chatInterServerMessageHandler
-    :: TVar ConnectionMap -> (R.RedisChannel, R.MessageCallback)
-chatInterServerMessageHandler connMap =
+    :: TVar WebsocketController -> (R.RedisChannel, R.MessageCallback)
+chatInterServerMessageHandler wsController =
     makeMessageHandler ChatRedisChannel $ \_ -> \case
-        BroadcastChatMessage subMsg -> broadcastMessage connMap subMsg
+        BroadcastChatMessage subMsg -> broadcastMessage wsController subMsg
 
 -- | Handler for incoming websocket messages.
 chatClientMessageHandler

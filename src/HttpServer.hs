@@ -19,7 +19,7 @@ import           ISCB                           ( publishMessage )
 import           Ping                           ( PingInterServerMessage(..) )
 import           Sockets                        ( websocketsHandlerWithFallback
                                                 )
-import           Sockets.Messages               ( ConnectionMap
+import           Sockets.Messages               ( WebsocketController
                                                 , WebsocketHandler
                                                 , makeWebsocketHandler
                                                 )
@@ -27,8 +27,8 @@ import           Sockets.Messages               ( ConnectionMap
 
 -- | Publish proper ISCB messages for /ping1 & /ping2 routes, expose
 -- websockets at /websockets, 404 for everything else.
-app :: TVar ConnectionMap -> Connection -> Application
-app wsConnMap redisConn req respond = case pathInfo req of
+app :: TVar WebsocketController -> Connection -> Application
+app wsController redisConn req respond = case pathInfo req of
     ["ping1"] -> do
         void . runRedis redisConn $ publishMessage SendPing1
         respond $ responseLBS status200 [] ""
@@ -36,7 +36,7 @@ app wsConnMap redisConn req respond = case pathInfo req of
         void . runRedis redisConn $ publishMessage SendPing2
         respond $ responseLBS status200 [] ""
     ["websockets"] -> do
-        websocketsHandlerWithFallback wsConnMap
+        websocketsHandlerWithFallback wsController
                                       (websocketHandlers redisConn)
                                       req
                                       respond

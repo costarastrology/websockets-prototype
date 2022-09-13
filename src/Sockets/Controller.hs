@@ -1,4 +1,4 @@
-{-| An opaque connection storage type along with querying, sending,
+{-| A websockets connection controller along with querying, sending,
 & manipulation functions.
 
 TODO: by consolidating this module w/ 'Sockets.Messages', we can remove the
@@ -7,10 +7,10 @@ when allowing users to subscribe to channels - that requires another map
 that we'd want to maintain here.
 
 -}
-module Sockets.Connections
+module Sockets.Controller
     ( UserId
-    , ConnectionMap
-    , initializeConnectionMap
+    , WebsocketController
+    , initializeWebsocketsController
     , registerNewClient
     , unregisterClient
     , getConnectedClients
@@ -47,43 +47,46 @@ import qualified Data.Map.Strict               as M
 type UserId = UUID
 
 -- | WebSocket connection state for a single server instance.
-newtype ConnectionMap = ConnectionMap
-    { cmMap :: M.Map UserId Connection
+newtype WebsocketController = WebsocketController
+    { wscConnMap :: M.Map UserId Connection
     -- ^ The Users/Connections that a server instance knows about.
     }
 
 -- | Build an empty connection map, initialize the first client ID to @1@,
 -- and stick it all in a TVar.
-initializeConnectionMap :: IO (TVar ConnectionMap)
-initializeConnectionMap = newTVarIO ConnectionMap { cmMap = M.empty }
+initializeWebsocketsController :: IO (TVar WebsocketController)
+initializeWebsocketsController =
+    newTVarIO WebsocketController { wscConnMap = M.empty }
 
 -- | Add a new connection to the user mapping, assigning & returning a new
 -- UserId.
-registerNewClient :: TVar ConnectionMap -> Connection -> IO UserId
-registerNewClient connMapTVar newConnection = do
+registerNewClient :: TVar WebsocketController -> Connection -> IO UserId
+registerNewClient contrTVar newConnection = do
     clientId <- nextRandom
-    atomically . modifyTVar connMapTVar $ \connMap ->
-        connMap { cmMap = M.insert clientId newConnection $ cmMap connMap }
+    atomically . modifyTVar contrTVar $ \controller -> controller
+        { wscConnMap = M.insert clientId newConnection $ wscConnMap controller
+        }
     return clientId
 
 -- | Remove a client from the connection map.
-unregisterClient :: TVar ConnectionMap -> UserId -> STM ()
-unregisterClient connMapTVar clientId = modifyTVar connMapTVar
-    $ \connMap -> connMap { cmMap = M.delete clientId $ cmMap connMap }
+unregisterClient :: TVar WebsocketController -> UserId -> STM ()
+unregisterClient contrTVar clientId = modifyTVar contrTVar $ \controller ->
+    controller { wscConnMap = M.delete clientId $ wscConnMap controller }
 
 -- | Retrieve all clients in the connection map.
-getConnectedClients :: TVar ConnectionMap -> STM [UserId]
-getConnectedClients = fmap (M.keys . cmMap) . readTVar
+getConnectedClients :: TVar WebsocketController -> STM [UserId]
+getConnectedClients = fmap (M.keys . wscConnMap) . readTVar
 
 -- | Send a message to the client with the given ID.
 sendRawMessageToClient
-    :: TVar ConnectionMap -> UserId -> LBS.ByteString -> IO ()
-sendRawMessageToClient connMapTVar clientId message = do
-    mbClientConnection <- M.lookup clientId . cmMap <$> readTVarIO connMapTVar
+    :: TVar WebsocketController -> UserId -> LBS.ByteString -> IO ()
+sendRawMessageToClient contrTVar clientId message = do
+    mbClientConnection <-
+        M.lookup clientId . wscConnMap <$> readTVarIO contrTVar
     forM_ mbClientConnection $ \c -> sendTextData c message
 
 -- | Send a message to all connected clients.
-broadcastRawMessage :: TVar ConnectionMap -> LBS.ByteString -> IO ()
-broadcastRawMessage connMapTVar message = do
-    allClients <- M.elems . cmMap <$> readTVarIO connMapTVar
+broadcastRawMessage :: TVar WebsocketController -> LBS.ByteString -> IO ()
+broadcastRawMessage contrTVar message = do
+    allClients <- M.elems . wscConnMap <$> readTVarIO contrTVar
     forM_ allClients $ flip sendTextData message

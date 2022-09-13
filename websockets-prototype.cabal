@@ -34,7 +34,7 @@ library
       ISCB
       Ping
       Sockets
-      Sockets.Connections
+      Sockets.Controller
       Sockets.Messages
       Utils
   other-modules:

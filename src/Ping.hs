@@ -15,9 +15,9 @@ import           GHC.Generics                   ( Generic )
 import           ISCB                           ( MessageToChannel(..)
                                                 , makeMessageHandler
                                                 )
-import           Sockets.Messages               ( ConnectionMap
-                                                , HasWSChannelName(..)
+import           Sockets.Messages               ( HasWSChannelName(..)
                                                 , SendableWSMessage
+                                                , WebsocketController
                                                 , broadcastMessage
                                                 )
 import           Utils                          ( getFormattedTime
@@ -75,8 +75,8 @@ instance MessageToChannel PingInterServerMessage where
 
 -- | Broadcast the correct 'Ping' when receiving a redis message.
 pingInterServerMessageHandlers
-    :: TVar ConnectionMap -> [(R.RedisChannel, R.MessageCallback)]
-pingInterServerMessageHandlers connMap =
+    :: TVar WebsocketController -> [(R.RedisChannel, R.MessageCallback)]
+pingInterServerMessageHandlers wsController =
     [ makeMessageHandler (PingChannel 1) $ \channel -> \case
         SendPing1 -> do
             formattedTime <- getFormattedTime
@@ -88,7 +88,7 @@ pingInterServerMessageHandlers connMap =
                       , BC.unpack channel
                       , "] Pong 1"
                       ]
-            broadcastMessage connMap $ Ping 1
+            broadcastMessage wsController $ Ping 1
         _ -> return ()
     , makeMessageHandler (PingChannel 2) $ \channel -> \case
         SendPing2 -> do
@@ -101,6 +101,6 @@ pingInterServerMessageHandlers connMap =
                       , BC.unpack channel
                       , "] Pong 2"
                       ]
-            broadcastMessage connMap $ Ping 2
+            broadcastMessage wsController $ Ping 2
         _ -> return ()
     ]
