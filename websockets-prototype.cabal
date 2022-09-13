@@ -65,6 +65,7 @@ library
     , stm
     , text
     , time
+    , uuid
     , wai
     , wai-websockets
     , websockets

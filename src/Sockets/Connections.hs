@@ -20,50 +20,50 @@ module Sockets.Connections
 
 import           Control.Concurrent.STM         ( STM
                                                 , TVar
+                                                , atomically
                                                 , modifyTVar
                                                 , newTVarIO
                                                 , readTVar
                                                 , readTVarIO
                                                 )
 import           Control.Monad                  ( forM_ )
+import           Data.UUID                      ( UUID )
+import           Data.UUID.V4                   ( nextRandom )
 import           Network.WebSockets             ( Connection
                                                 , sendTextData
                                                 )
-import           Numeric.Natural                ( Natural )
 
 import qualified Data.ByteString.Lazy          as LBS
 import qualified Data.Map.Strict               as M
 
 
 -- | Placeholder type for our @user.id@ database column.
-type UserId = Natural
+--
+-- We use this to accept & identify _any_ websocket connection. In reality,
+-- we should be inspecting the request headers, decoding the Auth Token
+-- into a DB-backed 'UserId', & rejecting the connection when authorization
+-- fails. We should see if putting the websockets route under a Servant
+-- @AuthProtect@ will do all of the above work for us.
+type UserId = UUID
 
 -- | WebSocket connection state for a single server instance.
-data ConnectionMap = ConnectionMap
-    { cmNextClientId :: UserId
-    -- ^ We use this to accept & identify any websocket connection. In
-    -- reality, we should be inspecting the request headers, decoding the
-    -- Auth Token into a DB-backed 'UserId', & rejecting the connection
-    -- when authorization fails.
-    , cmMap          :: M.Map UserId Connection
+newtype ConnectionMap = ConnectionMap
+    { cmMap :: M.Map UserId Connection
     -- ^ The Users/Connections that a server instance knows about.
     }
 
 -- | Build an empty connection map, initialize the first client ID to @1@,
 -- and stick it all in a TVar.
 initializeConnectionMap :: IO (TVar ConnectionMap)
-initializeConnectionMap =
-    newTVarIO ConnectionMap { cmNextClientId = 1, cmMap = M.empty }
+initializeConnectionMap = newTVarIO ConnectionMap { cmMap = M.empty }
 
 -- | Add a new connection to the user mapping, assigning & returning a new
 -- UserId.
-registerNewClient :: TVar ConnectionMap -> Connection -> STM UserId
+registerNewClient :: TVar ConnectionMap -> Connection -> IO UserId
 registerNewClient connMapTVar newConnection = do
-    clientId <- cmNextClientId <$> readTVar connMapTVar
-    modifyTVar connMapTVar $ \connMap -> connMap
-        { cmNextClientId = succ $ cmNextClientId connMap
-        , cmMap          = M.insert clientId newConnection $ cmMap connMap
-        }
+    clientId <- nextRandom
+    atomically . modifyTVar connMapTVar $ \connMap ->
+        connMap { cmMap = M.insert clientId newConnection $ cmMap connMap }
     return clientId
 
 -- | Remove a client from the connection map.

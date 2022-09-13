@@ -81,7 +81,7 @@ websocketsHandler
     :: TVar ConnectionMap -> [WebsocketHandler] -> PendingConnection -> IO ()
 websocketsHandler connMap messageHandlers pendingConn = do
     connection <- acceptRequest pendingConn
-    clientId   <- atomically $ registerNewClient connMap connection
+    clientId   <- registerNewClient connMap connection
     logConnected clientId
     withPingThread connection 30 (return ())
         $ withCleanup clientId
