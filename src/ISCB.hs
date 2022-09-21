@@ -23,12 +23,12 @@ import           Data.Aeson                     ( FromJSON(..)
 import           Data.Kind                      ( Type )
 import           Database.Redis                 ( Connection
                                                 , MessageCallback
+                                                , PubSubController
                                                 , Redis
                                                 , RedisChannel
                                                 , Reply
                                                 , connect
                                                 , defaultConnectInfo
-                                                , newPubSubController
                                                 , pubSubForever
                                                 , publish
                                                 )
@@ -67,13 +67,11 @@ class MessageToChannel msg where
 -- HANDLERS
 
 -- | Connect to Redis & then fork a forever-running, parallel thread to
--- subscribe to the desired redis channels which is run alongside the
+-- handle messages from subscribed desired redis channels alongside the
 -- passed action.
-withRedisSubs
-    :: [(RedisChannel, MessageCallback)] -> (Connection -> IO ()) -> IO ()
-withRedisSubs initialHandlers nextTo = do
-    conn             <- connect defaultConnectInfo
-    pubSubController <- newPubSubController initialHandlers []
+withRedisSubs :: PubSubController -> (Connection -> IO ()) -> IO ()
+withRedisSubs pubSubController nextTo = do
+    conn <- connect defaultConnectInfo
     void $ concurrently
         (       forever
         $       pubSubForever conn

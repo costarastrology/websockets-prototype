@@ -121,6 +121,144 @@ You should see every websockets client receive this message:
 
 [postman]: https://learning.postman.com/docs/sending-requests/websocket/websocket/
 
+### Websocket Subscriptions
+
+Again, start two servers & connect a client to each. In one client, subscribe
+to a new chat room:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "type": "JoinRoom",
+        "contents": {
+            "room": "#haskell"
+        }
+    }
+}
+```
+
+You will receive back a members list(accurate list not implemented):
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "contents": {
+            "room": "#haskell",
+            "users": []
+        },
+        "type": "MemberList"
+    }
+}
+```
+
+As well as an acknowledgement of joining:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "contents": {
+            "room": "#haskell",
+            "user": "b5eda4bd-a8f2-4d6f-81c5-3da4c4333679"
+        },
+        "type": "JoinedRoom"
+    }
+}
+```
+
+Send a message to the chat room:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "type": "SendMessage",
+        "contents": {
+            "room": "#haskell",
+            "message": "Monad monoid category whatever"
+        }
+    }
+}
+```
+
+You will receive the message back, the other client will not get this since it
+is not subscribed:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "contents": {
+            "message": "Monad monoid category whatever",
+            "room": "#haskell",
+            "user": "b5eda4bd-a8f2-4d6f-81c5-3da4c4333679"
+        },
+        "type": "NewMessage"
+    }
+}
+```
+
+Now, join the room in the other client:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "type": "JoinRoom",
+        "contents": {
+            "room": "#haskell"
+        }
+    }
+}
+```
+
+The first client will be notified of the new user joining:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "contents": {
+            "room": "#haskell",
+            "user": "7407f221-f839-4ebb-9184-000879870af1"
+        },
+        "type": "JoinedRoom"
+    }
+}
+```
+
+Now whenever a client sends a message, both clients will receive it back.
+
+A client can leave a room to stop receiving those messages:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "type": "LeaveRoom",
+        "contents": {
+            "room": "#haskell"
+        }
+    }
+}
+```
+
+All subscribed clients will receive notice of their departure:
+
+```json
+{
+    "channel": "chat-room",
+    "message": {
+        "contents": {
+            "room": "#haskell",
+            "user": "b5eda4bd-a8f2-4d6f-81c5-3da4c4333679"
+        },
+        "type": "LeftRoom"
+    }
+}
+```
 
 ## LICENSE
 

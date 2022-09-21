@@ -31,6 +31,7 @@ import           Network.WebSockets             ( CompressionOptions(..)
 import           Sockets.Controller             ( UserId
                                                 , WebsocketController
                                                 , getConnectedClients
+                                                , getSubscriptions
                                                 , registerNewClient
                                                 , unregisterClient
                                                 )
@@ -95,14 +96,17 @@ websocketsHandler wsController messageHandlers pendingConn = do
     logConnected clientId = do
         putStrLn $ "[WebSocket] [" <> show clientId <> "] Connected"
         connectedIds <- atomically $ getConnectedClients wsController
+        activeSubs   <- atomically $ getSubscriptions wsController
         putStrLn $ "[WebSocket] New Client List: " <> show connectedIds
+        putStrLn $ "[WebSocket] New Subscription List: " <> show activeSubs
     withCleanup :: UserId -> IO () -> IO ()
     withCleanup clientId = handle $ \(_ :: ConnectionException) -> do
-        connectedIds <- atomically $ do
-            unregisterClient wsController clientId
-            getConnectedClients wsController
+        unregisterClient wsController clientId
+        connectedIds <- atomically $ getConnectedClients wsController
+        activeSubs   <- atomically $ getSubscriptions wsController
         putStrLn $ "[WebSocket] [" <> show clientId <> "] Disconnected"
         putStrLn $ "[WebSocket] New Client List: " <> show connectedIds
+        putStrLn $ "[WebSocket] New Subscription List: " <> show activeSubs
     handleMessages :: UserId -> Connection -> IO ()
     handleMessages clientId connection = do
         receiveData connection

@@ -3,13 +3,10 @@
 connected clients, as well as building & executing handlers for incoming
 message types.
 
-TODO: Support dynamic, parameterized channels!
-
-We need to match the structure of hedis pub/sub where we specify an initial
-list of (channel, handlers) pairs, along with functions that can add or
-remove a (channel, handler) pair. Which means we can't derive the channel
-based on the message type. Clients should be able to send us generic
-subscribe/unsubscribe messages that list them as listeners of a given channel.
+You will want to define sendable & receivable message type for a single
+communication channel. Use 'makeWebsocketHandler' to build a handler for
+each receivable message and pass them to the
+'Sockets.websocketsHandlerWithFallback' function used in your webserver.
 
 -}
 module Sockets.Messages
@@ -20,6 +17,7 @@ module Sockets.Messages
     , SendableWSMessage
     , broadcastMessage
     , sendMessage
+    , sendMessageToLocalSubscribers
     -- * Receiving
     , ReceivableWSMessage
     , WebsocketHandler
@@ -39,10 +37,12 @@ import           Data.Aeson                     ( (.:)
                                                 , withObject
                                                 )
 
-import           Sockets.Controller             ( UserId
+import           Sockets.Controller             ( SubscriptionIdentifier
+                                                , UserId
                                                 , WebsocketController
                                                 , broadcastRawMessage
                                                 , sendRawMessageToClient
+                                                , sendRawMessageToSubscription
                                                 )
 
 import qualified Data.ByteString.Lazy          as LBS
@@ -52,6 +52,9 @@ import qualified Data.Text                     as T
 
 -- GENERAL MESSAGE STRUCTURE
 
+-- | Attach a channel name to a message. The channel name functions as
+-- a switch point when decoding to determine what type we decode the
+-- wmMessage to & the appropriate handler function to call.
 data WebsocketMessage a = WebsocketMessage
     { wmChannel :: T.Text
     , wmMessage :: a
@@ -69,15 +72,14 @@ instance ToJSON a => ToJSON (WebsocketMessage a) where
 
 -- | Specify a static channel name for a given websocket message.
 --
--- TODO: this is intractable if we want routing of messages beyond a single
--- top-level handler. The channel name needs additional context during
--- generation and cannot be a fixed string.
---
--- E.g., we may want a @story-9001@ channel that clients can subscribe to,
--- where they receive updates only for the story with an ID of 9001.
+-- This is used to dispatch incoming messages to the correct handler
+-- functions. If you need to parameterize sending / receiving then look
+-- into the "Sockets.Subscriptions" module.
 class HasWSChannelName msg where
     wsChannelName :: T.Text
 
+-- | Wrap the message in our WebSocketsData type so the channel is included
+-- in the JSON encoding/decoding.
 toWebsocketsMessage
     :: forall a . HasWSChannelName a => a -> WebsocketMessage a
 toWebsocketsMessage msg =
@@ -92,11 +94,27 @@ class (HasWSChannelName msg, ToJSON msg) => SendableWSMessage msg
 
 -- | Send a message to the client with the given ID.
 sendMessage
-    :: SendableWSMessage msg => TVar WebsocketController -> UserId -> msg -> IO ()
+    :: SendableWSMessage msg
+    => TVar WebsocketController
+    -> UserId
+    -> msg
+    -> IO ()
 sendMessage cm u = sendRawMessageToClient cm u . encode . toWebsocketsMessage
 
+-- | Send a message to all clients sub'd to the subscription on the current
+-- server.
+sendMessageToLocalSubscribers
+    :: SendableWSMessage msg
+    => TVar WebsocketController
+    -> SubscriptionIdentifier
+    -> msg
+    -> IO ()
+sendMessageToLocalSubscribers wsCtl sub =
+    sendRawMessageToSubscription wsCtl sub . encode . toWebsocketsMessage
+
 -- | Send a message to all connected clients.
-broadcastMessage :: SendableWSMessage msg => TVar WebsocketController -> msg -> IO ()
+broadcastMessage
+    :: SendableWSMessage msg => TVar WebsocketController -> msg -> IO ()
 broadcastMessage cm msg =
     broadcastRawMessage cm . encode $ toWebsocketsMessage msg
 
@@ -162,6 +180,7 @@ handleIncomingWebsocketMessages uid allHandlers rawMsg =
             mapM_ (($ rawMsg) . ($ uid) . whHandler) matchingChannels
 
 -- | A throwaway type we use to decode just the channel from a message.
+--
 -- With the channel name, we can pass the raw message to the appropriate
 -- handler, which will take care of decoding the raw message into it's
 -- respective message type.

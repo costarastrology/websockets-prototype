@@ -15,6 +15,7 @@ import           Network.Wai                    ( Application
                                                 )
 
 import           Chat                           ( chatClientMessageHandler )
+import           ChatRooms                      ( chatRoomClientMessageHandler )
 import           ISCB                           ( publishMessage )
 import           Ping                           ( PingInterServerMessage(..) )
 import           Sockets                        ( websocketsHandlerWithFallback
@@ -36,13 +37,13 @@ app wsController redisConn req respond = case pathInfo req of
         void . runRedis redisConn $ publishMessage SendPing2
         respond $ responseLBS status200 [] ""
     ["websockets"] -> do
-        websocketsHandlerWithFallback wsController
-                                      (websocketHandlers redisConn)
-                                      req
-                                      respond
+        websocketsHandlerWithFallback wsController websocketHandlers req respond
     _ -> respond $ responseLBS status404 [] "invalid path"
 
--- | Handlers for all our websocket message types.
-websocketHandlers :: Connection -> [WebsocketHandler]
-websocketHandlers redisConn =
-    [makeWebsocketHandler (chatClientMessageHandler redisConn)]
+  where
+    -- | Handlers for all our incoming websocket message types.
+    websocketHandlers :: [WebsocketHandler]
+    websocketHandlers =
+        [ makeWebsocketHandler (chatClientMessageHandler redisConn)
+        , chatRoomClientMessageHandler redisConn wsController
+        ]

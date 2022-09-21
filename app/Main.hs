@@ -1,5 +1,9 @@
 module Main where
 
+import           Control.Monad                  ( void )
+import           Database.Redis                 ( addChannels
+                                                , newPubSubController
+                                                )
 import           Network.Wai.Handler.Warp       ( runEnv )
 import           Network.Wai.Middleware.RequestLogger
                                                 ( logStdoutDev )
@@ -15,9 +19,16 @@ import           Sockets.Controller             ( initializeWebsocketsController
 
 main :: IO ()
 main = do
-    wsController <- initializeWebsocketsController
-    withRedisSubs
+    pubSubController <- newPubSubController [] []
+    putStrLn "PubSub Initialized"
+    wsController <- initializeWebsocketsController pubSubController
+    putStrLn "WS Initialized"
+    void $ addChannels
+        pubSubController
         ( chatInterServerMessageHandler wsController
         : pingInterServerMessageHandlers wsController
         )
-        (runEnv 9001 . logStdoutDev . app wsController)
+        []
+    putStrLn "Added Initial PubSub Handlers"
+    withRedisSubs pubSubController
+                  (runEnv 9001 . logStdoutDev . app wsController)

@@ -30,12 +30,14 @@ source-repository head
 library
   exposed-modules:
       Chat
+      ChatRooms
       HttpServer
       ISCB
       Ping
       Sockets
       Sockets.Controller
       Sockets.Messages
+      Sockets.Subscriptions
       Utils
   other-modules:
       Paths_websockets_prototype
@@ -58,6 +60,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , containers
+    , hashable
     , hedis
     , http-types
     , lifted-async
@@ -65,6 +68,7 @@ library
     , stm
     , text
     , time
+    , unordered-containers
     , uuid
     , wai
     , wai-websockets
@@ -91,6 +95,7 @@ executable websockets-prototype
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts "-N -T"
   build-depends:
       base >=4.7 && <5
+    , hedis
     , wai-extra
     , warp
     , websockets-prototype
